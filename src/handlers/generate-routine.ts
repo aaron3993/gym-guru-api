@@ -1,3 +1,7 @@
 export const handler = async () => {
-    return JSON.stringify({ message: 'Hello World!'})
+    return {
+        'statusCode': 200,
+        'headers': {'Content-Type': 'application/json'},
+        'body': JSON.stringify({ message: 'Hello World!'})
+      }
 }
