@@ -2,27 +2,27 @@ import * as AWS from 'aws-sdk';
 import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
 
-const secretsManager = new AWS.SecretsManager();
+// const secretsManager = new AWS.SecretsManager();
 
-const getSecret = async (secretName: string) => {
-    try {
-      // Fetch the secret from Secrets Manager
-      const data = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
+// const getSecret = async (secretName: string) => {
+//     try {
+//       // Fetch the secret from Secrets Manager
+//       const data = await secretsManager.getSecretValue({ SecretId: secretName }).promise();
   
-      if (data.SecretString) {
-        // If the secret is a string, return it directly
-        const secret = JSON.parse(data.SecretString);
-        return secret;
-      } else {
-        // Handle the case where the secret is not a string
-        throw new Error('Secret is not in string format');
-      }
-    } catch (err) {
-      // Log any errors that occur during fetching the secret
-      console.error('Error retrieving secret:', err);
-      throw new Error('Failed to retrieve secret');
-    }
-  };
+//       if (data.SecretString) {
+//         // If the secret is a string, return it directly
+//         const secret = JSON.parse(data.SecretString);
+//         return secret;
+//       } else {
+//         // Handle the case where the secret is not a string
+//         throw new Error('Secret is not in string format');
+//       }
+//     } catch (err) {
+//       // Log any errors that occur during fetching the secret
+//       console.error('Error retrieving secret:', err);
+//       throw new Error('Failed to retrieve secret');
+//     }
+//   };
 
 export const handler = async (event: APIGatewayEvent) => {
     if (!event.headers?.Authorization) {
@@ -41,16 +41,16 @@ export const handler = async (event: APIGatewayEvent) => {
     const secretName = 'firebase-service-account';
 
     try {
-        const secrets = await getSecret(secretName);
-    
+        // const secrets = await getSecret(secretName);
+        console.log('retrieved secrets')
         // Initialize Firebase Admin SDK with secrets from Secrets Manager
-        admin.initializeApp({
-          credential: admin.credential.cert({
-            projectId: secrets.projectId,
-            clientEmail: secrets.clientEmail,
-            privateKey: secrets.privateKey.replace(/\\n/g, '\n'),
-          }),
-        });
+        // admin.initializeApp({
+        //   credential: admin.credential.cert({
+        //     projectId: secrets.projectId,
+        //     clientEmail: secrets.clientEmail,
+        //     privateKey: secrets.privateKey.replace(/\\n/g, '\n'),
+        //   }),
+        // });
     
         const token = event.headers.Authorization?.split('Bearer ')[1];
     
@@ -63,8 +63,8 @@ export const handler = async (event: APIGatewayEvent) => {
     
         try {
           // Firebase Admin SDK verifies the token
-          const decodedToken = await admin.auth().verifyIdToken(token);
-          console.log('Decoded token:', decodedToken);
+        //   const decodedToken = await admin.auth().verifyIdToken(token);
+        //   console.log('Decoded token');
     
           // Proceed with your logic (e.g., generate routine)
           return {
