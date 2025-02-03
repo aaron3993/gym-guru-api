@@ -12,33 +12,34 @@ export class GymGuruApiStack extends cdk.Stack {
     const lambdaExecutionRole = new iam.Role(this, 'LambdaExecutionRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
-
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
-      actions: ['secretsmanager:GetSecretValue'],
-      resources: ['arn:aws:secretsmanager:*:*:secret:*'],
-      conditions: {
-        "StringEquals": {
-          "aws:RequestTag/Name": fireBaseServiceAccount
-        }
-      }
+      actions: ['secretsmanager:ListSecrets', 'secretsmanager:GetSecretValue'],
+      resources: ['*'],
     }));
 
+    lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
+      actions: [
+        'logs:CreateLogGroup',
+        'logs:CreateLogStream',
+        'logs:PutLogEvents'
+      ],
+      resources: ['arn:aws:logs:*:*:*'],
+    }));
+    
+
     const generateRoutine = new NodejsFunction(this, 'GenerateRoutine', {
-      // runtime: lambda.Runtime.NODEJS_18_X,
       entry: 'src/handlers/generate-routine.ts',
       handler: 'handler',
       environment: {
-        SECRET_NAME: fireBaseServiceAccount,  // Environment variable for secret name
+        SECRET_NAME: fireBaseServiceAccount,
       },
       role: lambdaExecutionRole
     })
 
-    // Create API Gateway
     const api = new apigateway.RestApi(this, 'GymGuruApi', {
       restApiName: 'GymGuru API',
     });
 
-    // Add Lambda Integration
     const generateRoutineResource = api.root.addResource('generate-routine');
     generateRoutineResource.addMethod('POST', new apigateway.LambdaIntegration(generateRoutine), {
     
