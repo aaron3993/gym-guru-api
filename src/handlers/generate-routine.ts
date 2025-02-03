@@ -28,6 +28,12 @@ export const handler = async (event: APIGatewayEvent) => {
     if (!event.headers?.Authorization) {
         return {
             statusCode: 400,
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
             body: JSON.stringify({ message: 'Authorization header missing' }),
           };
       }
@@ -63,7 +69,12 @@ export const handler = async (event: APIGatewayEvent) => {
           // Proceed with your logic (e.g., generate routine)
           return {
             'statusCode': 200,
-            'headers': {'Content-Type': 'application/json'},
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            },
             'body': JSON.stringify({ message: 'Hello World!'})
           }
         } catch (error) {
@@ -79,5 +90,5 @@ export const handler = async (event: APIGatewayEvent) => {
           statusCode: 500,
           body: JSON.stringify({ message: 'Internal server error' }),
         };
-      }
+    }
 }
