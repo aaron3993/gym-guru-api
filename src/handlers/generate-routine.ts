@@ -5,17 +5,13 @@ import { APIGatewayEvent } from 'aws-lambda';
 const secretsManager = new AWS.SecretsManager();
 
 async function getSecretByName(secretName: string): Promise<string> {
-  // Fetch the list of secrets
   const secretsList: AWS.SecretsManager.ListSecretsResponse = await secretsManager.listSecrets().promise();
-
-  // Find the specific secret by name
   const secret: AWS.SecretsManager.SecretListEntry | undefined = secretsList.SecretList?.find(
       (s) => s.Name === secretName
   );
 
   if (!secret || !secret.ARN) throw new Error(`Secret "${secretName}" not found`);
 
-  // Fetch the secret value using the discovered ARN
   const response: AWS.SecretsManager.GetSecretValueResponse = await secretsManager
       .getSecretValue({ SecretId: secret.ARN })
       .promise();
@@ -41,24 +37,18 @@ export const handler = async (event: APIGatewayEvent) => {
 
     const secretName = 'firebase-service-account';
     const secretString = await getSecretByName(secretName);
-        console.log("Secret Retrieved");
-        // const secrets = JSON.parse(secretString);
+    const secrets = JSON.parse(secretString);
+
     try {
-        // const secrets = await getSecret(secretName);
-        // console.log('Successfully retrieved secret:', {
-        //   projectId: secrets.projectId, // Safe to log
-        //   clientEmail: secrets.clientEmail, // Safe to log
-        //   secretLength: secretString.length, // Just for debugging
-        // });
-        // Initialize Firebase Admin SDK with secrets from Secrets Manager
-        // admin.initializeApp({
-        //   credential: admin.credential.cert({
-        //     projectId: secrets.projectId,
-        //     clientEmail: secrets.clientEmail,
-        //     privateKey: secrets.privateKey.replace(/\\n/g, '\n'),
-        //   }),
-        // });
-    
+    const fireBaseServiceAccountString = secrets.FIREBASE_SERVICE_ACCOUNT_SECRET
+    const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
+        admin.initializeApp({
+          credential: admin.credential.cert({
+            projectId: parsedFireBaseServiceAccountObject.project_id,
+            clientEmail: parsedFireBaseServiceAccountObject.client_email,
+            privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
+          }),
+        });
         const token = event.headers.Authorization?.split('Bearer ')[1];
     
         if (!token) {
@@ -69,8 +59,8 @@ export const handler = async (event: APIGatewayEvent) => {
         }
     
         try {
-          // Firebase Admin SDK verifies the token
           // const decodedToken = await admin.auth().verifyIdToken(token);
+          // if (decodedToken) console.log('token decoded')
           // console.log('Decoded token');
     
           // Proceed with your logic (e.g., generate routine)
@@ -78,7 +68,7 @@ export const handler = async (event: APIGatewayEvent) => {
             'statusCode': 200,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+                "Access-Control-Allow-Origin": "http://localhost:3000",
                 "Access-Control-Allow-Methods": "POST, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
             },
