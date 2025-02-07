@@ -59,20 +59,18 @@ export const handler = async (event: APIGatewayEvent) => {
         }
     
         try {
-          // const decodedToken = await admin.auth().verifyIdToken(token);
-          // if (decodedToken) console.log('token decoded')
-          // console.log('Decoded token');
+          const decodedToken = await admin.auth().verifyIdToken(token);
     
           // Proceed with your logic (e.g., generate routine)
           return {
-            'statusCode': 200,
+            statusCode: 200,
             headers: {
                 "Content-Type": "application/json",
                 "Access-Control-Allow-Origin": "http://localhost:3000",
                 "Access-Control-Allow-Methods": "POST, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
             },
-            'body': JSON.stringify({ message: 'Hello World!'})
+            body: JSON.stringify({ message: 'Request successful'})
           }
         } catch (error) {
           console.error('Error verifying token:', error);
