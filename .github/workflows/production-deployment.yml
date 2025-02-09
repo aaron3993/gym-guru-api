@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - code/refactor-openai-logic
 
 jobs:
   production-deployment:
@@ -22,6 +23,9 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
+
+      - name: Set OpenAI API Key as environment variable
+        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
 
       - name: Deploy CDK Stack
         run: npx cdk deploy --require-approval never
