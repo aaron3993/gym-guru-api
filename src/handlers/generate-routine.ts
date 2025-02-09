@@ -1,6 +1,7 @@
 import * as AWS from 'aws-sdk';
 import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
+import { fetchWorkoutPlanFromOpenAI } from '../services/openaiUtils';
 
 const secretsManager = new AWS.SecretsManager();
 
@@ -23,17 +24,26 @@ async function getSecretByName(secretName: string): Promise<string> {
 
 export const handler = async (event: APIGatewayEvent) => {
     if (!event.headers?.Authorization) {
-        return {
-            statusCode: 400,
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
-                "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            },
-            body: JSON.stringify({ message: 'Authorization header missing' }),
-          };
-      }
+      return {
+          statusCode: 400,
+          headers: {
+              "Content-Type": "application/json",
+              "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+              "Access-Control-Allow-Methods": "POST, OPTIONS",
+              "Access-Control-Allow-Headers": "Content-Type, Authorization",
+          },
+          body: JSON.stringify({ message: 'Authorization header missing' }),
+        };
+    }
+
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "Request body is missing or empty" }),
+      };
+    }
+
+    const { messages } = JSON.parse(event.body);
 
     const secretName = 'firebase-service-account';
     const secretString = await getSecretByName(secretName);
@@ -49,6 +59,7 @@ export const handler = async (event: APIGatewayEvent) => {
             privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
           }),
         });
+
         const token = event.headers.Authorization?.split('Bearer ')[1];
     
         if (!token) {
@@ -59,9 +70,18 @@ export const handler = async (event: APIGatewayEvent) => {
         }
     
         try {
-          const decodedToken = await admin.auth().verifyIdToken(token);
-    
-          // Proceed with your logic (e.g., generate routine)
+          await admin.auth().verifyIdToken(token);
+        } catch (error) {
+          console.error('Error verifying token:', error);
+          return {
+            statusCode: 403,
+            body: JSON.stringify({ message: 'Error verifying token' }),
+          };
+        }
+
+          const workoutPlan = await fetchWorkoutPlanFromOpenAI(messages);
+          console.log({workoutPlan})
+          
           return {
             statusCode: 200,
             headers: {
@@ -70,15 +90,9 @@ export const handler = async (event: APIGatewayEvent) => {
                 "Access-Control-Allow-Methods": "POST, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
             },
-            body: JSON.stringify({ message: 'Request successful'})
+            data: workoutPlan
           }
-        } catch (error) {
-          console.error('Error verifying token:', error);
-          return {
-            statusCode: 403,
-            body: JSON.stringify({ message: 'Unauthorized' }),
-          };
-        }
+        
       } catch (error) {
         console.error('Error initializing Firebase Admin SDK:', error);
         return {
