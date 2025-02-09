@@ -31,9 +31,11 @@ export class GymGuruApiStack extends cdk.Stack {
       entry: 'src/handlers/generate-routine.ts',
       handler: 'handler',
       environment: {
-        SECRET_NAME: fireBaseServiceAccount,
+        // SECRET_NAME: fireBaseServiceAccount,
+        OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       },
-      role: lambdaExecutionRole
+      role: lambdaExecutionRole,
+      timeout: cdk.Duration.seconds(120)
     })
 
     const api = new apigateway.RestApi(this, 'GymGuruApi', {

@@ -4,6 +4,11 @@ import { Message } from "../interfaces/messages";
 // Function to fetch workout plan from OpenAI with refined error handling
 export const fetchWorkoutPlanFromOpenAI = async (messages: Message[]) => {
   try {
+    if (process.env.OPENAI_API_KEY) {
+      console.log('api key exists')
+    } else {
+      console.log('no api key found')
+    }
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
