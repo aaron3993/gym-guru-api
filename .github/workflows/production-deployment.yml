@@ -10,9 +10,6 @@ jobs:
   production-deployment:
     runs-on: ubuntu-latest
 
-    env:
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -26,9 +23,6 @@ jobs:
 
       - name: Install Dependencies
         run: npm install
-
-      - name: Set OpenAI API Key as environment variable
-        run: echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
 
       - name: Deploy CDK Stack
         run: npx cdk deploy --require-approval never

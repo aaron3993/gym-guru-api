@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { Message } from "../interfaces/messages";
+import * as dotenv from 'dotenv';
+dotenv.config();
 
 // Function to fetch workout plan from OpenAI with refined error handling
 export const fetchWorkoutPlanFromOpenAI = async (messages: Message[]) => {
