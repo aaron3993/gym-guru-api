@@ -32,7 +32,7 @@ export class GymGuruApiStack extends cdk.Stack {
       handler: 'handler',
       environment: {
         // SECRET_NAME: fireBaseServiceAccount,
-        OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+        // OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       },
       role: lambdaExecutionRole,
       timeout: cdk.Duration.seconds(120)
@@ -53,6 +53,7 @@ export class GymGuruApiStack extends cdk.Stack {
             'method.response.header.Access-Control-Allow-Origin': true,
             'method.response.header.Access-Control-Allow-Methods': true,
             'method.response.header.Access-Control-Allow-Headers': true,
+            "method.response.header.Access-Control-Allow-Credentials": true,
           },
         },
       ],
@@ -65,6 +66,7 @@ export class GymGuruApiStack extends cdk.Stack {
           'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",
           'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,POST'",
           'method.response.header.Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+          "method.response.header.Access-Control-Allow-Credentials": "'true'",
         },
       }],
       passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
@@ -76,6 +78,7 @@ export class GymGuruApiStack extends cdk.Stack {
           'method.response.header.Access-Control-Allow-Origin': true,
           'method.response.header.Access-Control-Allow-Methods': true,
           'method.response.header.Access-Control-Allow-Headers': true,
+          "method.response.header.Access-Control-Allow-Credentials": true,
         },
       }],
     });

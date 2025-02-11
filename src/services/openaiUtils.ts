@@ -1,16 +1,8 @@
 import axios from 'axios';
 import { Message } from "../interfaces/messages";
-import * as dotenv from 'dotenv';
-dotenv.config();
 
-// Function to fetch workout plan from OpenAI with refined error handling
-export const fetchWorkoutPlanFromOpenAI = async (messages: Message[]) => {
+export const fetchWorkoutPlanFromOpenAI = async (messages: Message[], openAIAPIKey: string) => {
   try {
-    if (process.env.OPENAI_API_KEY) {
-      console.log('api key exists')
-    } else {
-      console.log('no api key found')
-    }
     const response = await axios.post(
       "https://api.openai.com/v1/chat/completions",
       {
@@ -21,16 +13,18 @@ export const fetchWorkoutPlanFromOpenAI = async (messages: Message[]) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          Authorization: `Bearer ${openAIAPIKey}`,
           "Content-Type": "application/json",
         },
       }
     );
 
+    const workoutPlan = response.data.choices[0].message.content.trim();
+
     return {
       statusCode: 200,
       message: 'Workout plan fetched successfully.',
-      data: response.data,
+      data: workoutPlan,
     };
   } catch (error) {
     return {
