@@ -22,94 +22,81 @@ async function getSecretByName(secretName: string): Promise<string> {
   return response.SecretString;
 }
 
-export const handler = async (event: APIGatewayEvent) => {
-  console.log('lambda firing')
+async function verifyToken(token: string) {
   try {
-    // if (!event.headers?.Authorization) {
-    //   return {
-    //       statusCode: 400,
-    //       headers: {
-    //           "Content-Type": "application/json",
-    //           "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
-    //           "Access-Control-Allow-Methods": "POST, OPTIONS",
-    //           "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    //           // "Access-Control-Allow-Credentials": "true",
-    //       },
-    //       body: JSON.stringify({ message: 'Authorization header missing' }),
-    //     };
-    // }
+    await admin.auth().verifyIdToken(token);
+  } catch (error) {
+    console.error('Error verifying token:', error);
+    throw new Error('Unauthorized');
+  }
+}
 
-    // if (!event.body) {
-    //   return {
-    //     statusCode: 400,
-    //     body: JSON.stringify({ message: "Request body is missing or empty" }),
-    //   };
-    // }
-  
-    // const { messages } = JSON.parse(event.body);
-
-    // const secretName = 'firebase-service-account';
-    // const secretString = await getSecretByName(secretName);
-    // const secrets = JSON.parse(secretString);
-
-    // const fireBaseServiceAccountString = secrets.FIREBASE_SERVICE_ACCOUNT_SECRET
-    // const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
-    //   admin.initializeApp({
-    //     credential: admin.credential.cert({
-    //       projectId: parsedFireBaseServiceAccountObject.project_id,
-    //       clientEmail: parsedFireBaseServiceAccountObject.client_email,
-    //       privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
-    //     }),
-    //   });
-    //   console.log('firebase admin initialized')
-    //   const token = event.headers.Authorization?.split('Bearer ')[1];
-  
-    //   if (!token) {
-    //     return {
-    //       statusCode: 403,
-    //       body: JSON.stringify({ message: 'Unauthorized' }),
-    //     };
-    //   }
-  
-      // try {
-      //   await admin.auth().verifyIdToken(token);
-      // } catch (error) {
-      //   console.error('Error verifying token:', error);
-      //   return {
-      //     statusCode: 403,
-      //     body: JSON.stringify({ message: 'Error verifying token' }),
-      //   };
-      // }
-
-      // const openAISecretName = 'openai-api-key';
-      // const openAISecretString = await getSecretByName(openAISecretName);
-      // const openAISecrets = JSON.parse(openAISecretString);
-      // const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
-
-      // console.log('open ai api key fetched and parsed')
-      // const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
-      // console.log('post request complete')
-      // return {
-      //   statusCode: response.statusCode,
-      //   headers: {
-      //       "Content-Type": "application/json",
-      //       "Access-Control-Allow-Origin": "http://localhost:3000",
-      //       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      //       "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      //       "Access-Control-Allow-Credentials": "true",
-      //   },
-      //   data: response.data
-      // }
+export const handler = async (event: APIGatewayEvent) => {
+  try {
+    if (!event.headers?.Authorization) {
       return {
-        statusCode: 200,
+        statusCode: 400,
+        headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+            "Access-Control-Allow-Methods": "POST, OPTIONS",
+            "Access-Control-Allow-Headers": "Content-Type, Authorization",
+            "Access-Control-Allow-Credentials": "true",
+        },
+        body: JSON.stringify({ message: 'Authorization header missing' }),
+      };
+    }
+
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "Request body is missing or empty" }),
+      };
+    }
+  
+    const { messages } = JSON.parse(event.body);
+
+    const firebaseSecretName = 'firebase-service-account';
+    const firebaseSecretString = await getSecretByName(firebaseSecretName);
+    const firebaseSecrets = JSON.parse(firebaseSecretString);
+    const fireBaseServiceAccountString = firebaseSecrets.FIREBASE_SERVICE_ACCOUNT_SECRET
+
+    const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
+      admin.initializeApp({
+        credential: admin.credential.cert({
+          projectId: parsedFireBaseServiceAccountObject.project_id,
+          clientEmail: parsedFireBaseServiceAccountObject.client_email,
+          privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
+        }),
+      });
+
+      const token = event.headers.Authorization?.split('Bearer ')[1];
+  
+      if (!token) {
+        return {
+          statusCode: 403,
+          body: JSON.stringify({ message: 'Unauthorized' }),
+        };
+      }
+  
+      await verifyToken(token);
+
+      const openAISecretName = 'openai-api-key';
+      const openAISecretString = await getSecretByName(openAISecretName);
+      const openAISecrets = JSON.parse(openAISecretString);
+      const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
+
+      const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
+      return {
+        statusCode: response.statusCode,
         headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "http://localhost:3000",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            // "Access-Control-Allow-Credentials": "true",
+            "Access-Control-Allow-Credentials": "true",
         },
-        body: JSON.stringify({ data: [1, 2, 3] }),
+        body: response.data
       }
     } catch (error) {
       console.error(error);
