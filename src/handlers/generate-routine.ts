@@ -23,86 +23,99 @@ async function getSecretByName(secretName: string): Promise<string> {
 }
 
 export const handler = async (event: APIGatewayEvent) => {
-    if (!event.headers?.Authorization) {
-      return {
-          statusCode: 400,
-          headers: {
-              "Content-Type": "application/json",
-              "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
-              "Access-Control-Allow-Methods": "POST, OPTIONS",
-              "Access-Control-Allow-Headers": "Content-Type, Authorization",
-              "Access-Control-Allow-Credentials": "true",
-          },
-          body: JSON.stringify({ message: 'Authorization header missing' }),
-        };
-    }
+  console.log('lambda firing')
+  try {
+    // if (!event.headers?.Authorization) {
+    //   return {
+    //       statusCode: 400,
+    //       headers: {
+    //           "Content-Type": "application/json",
+    //           "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+    //           "Access-Control-Allow-Methods": "POST, OPTIONS",
+    //           "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    //           // "Access-Control-Allow-Credentials": "true",
+    //       },
+    //       body: JSON.stringify({ message: 'Authorization header missing' }),
+    //     };
+    // }
 
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Request body is missing or empty" }),
-      };
-    }
-
-    const { messages } = JSON.parse(event.body);
-
-    const secretName = 'firebase-service-account';
-    const secretString = await getSecretByName(secretName);
-    const secrets = JSON.parse(secretString);
-
-    try {
-    const fireBaseServiceAccountString = secrets.FIREBASE_SERVICE_ACCOUNT_SECRET
-    const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: parsedFireBaseServiceAccountObject.project_id,
-          clientEmail: parsedFireBaseServiceAccountObject.client_email,
-          privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
-        }),
-      });
-
-      const token = event.headers.Authorization?.split('Bearer ')[1];
+    // if (!event.body) {
+    //   return {
+    //     statusCode: 400,
+    //     body: JSON.stringify({ message: "Request body is missing or empty" }),
+    //   };
+    // }
   
-      if (!token) {
-        return {
-          statusCode: 403,
-          body: JSON.stringify({ message: 'Unauthorized' }),
-        };
-      }
+    // const { messages } = JSON.parse(event.body);
+
+    // const secretName = 'firebase-service-account';
+    // const secretString = await getSecretByName(secretName);
+    // const secrets = JSON.parse(secretString);
+
+    // const fireBaseServiceAccountString = secrets.FIREBASE_SERVICE_ACCOUNT_SECRET
+    // const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
+    //   admin.initializeApp({
+    //     credential: admin.credential.cert({
+    //       projectId: parsedFireBaseServiceAccountObject.project_id,
+    //       clientEmail: parsedFireBaseServiceAccountObject.client_email,
+    //       privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
+    //     }),
+    //   });
+    //   console.log('firebase admin initialized')
+    //   const token = event.headers.Authorization?.split('Bearer ')[1];
   
-      try {
-        await admin.auth().verifyIdToken(token);
-      } catch (error) {
-        console.error('Error verifying token:', error);
-        return {
-          statusCode: 403,
-          body: JSON.stringify({ message: 'Error verifying token' }),
-        };
-      }
+    //   if (!token) {
+    //     return {
+    //       statusCode: 403,
+    //       body: JSON.stringify({ message: 'Unauthorized' }),
+    //     };
+    //   }
+  
+      // try {
+      //   await admin.auth().verifyIdToken(token);
+      // } catch (error) {
+      //   console.error('Error verifying token:', error);
+      //   return {
+      //     statusCode: 403,
+      //     body: JSON.stringify({ message: 'Error verifying token' }),
+      //   };
+      // }
 
-      const openAISecretName = 'openai-api-key';
-      const openAISecretString = await getSecretByName(openAISecretName);
-      const openAISecrets = JSON.parse(openAISecretString);
-      const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
+      // const openAISecretName = 'openai-api-key';
+      // const openAISecretString = await getSecretByName(openAISecretName);
+      // const openAISecrets = JSON.parse(openAISecretString);
+      // const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
 
-      const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
-      
+      // console.log('open ai api key fetched and parsed')
+      // const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
+      // console.log('post request complete')
+      // return {
+      //   statusCode: response.statusCode,
+      //   headers: {
+      //       "Content-Type": "application/json",
+      //       "Access-Control-Allow-Origin": "http://localhost:3000",
+      //       "Access-Control-Allow-Methods": "POST, OPTIONS",
+      //       "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      //       "Access-Control-Allow-Credentials": "true",
+      //   },
+      //   data: response.data
+      // }
       return {
-        statusCode: response.statusCode,
+        statusCode: 200,
         headers: {
             "Content-Type": "application/json",
             "Access-Control-Allow-Origin": "http://localhost:3000",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            "Access-Control-Allow-Credentials": "true",
+            // "Access-Control-Allow-Credentials": "true",
         },
-        data: response.data
+        body: JSON.stringify({ data: [1, 2, 3] }),
       }
     } catch (error) {
-      console.error('Error initializing Firebase Admin SDK:', error);
+      console.error(error);
       return {
         statusCode: 500,
-        body: JSON.stringify({ message: 'Internal server error' }),
+        body: JSON.stringify({ message: 'Lambda failed', error }),
     };
   }
 }

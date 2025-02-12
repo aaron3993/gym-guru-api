@@ -3,6 +3,14 @@ import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Construct } from 'constructs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import {
+  ApiKey,
+  ApiKeySourceType,
+  Cors,
+  LambdaIntegration,
+  RestApi,
+  UsagePlan,
+} from "aws-cdk-lib/aws-apigateway";
 
 export class GymGuruApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -27,7 +35,7 @@ export class GymGuruApiStack extends cdk.Stack {
     }));
     
 
-    const generateRoutine = new NodejsFunction(this, 'GenerateRoutine', {
+    const generateRoutineLambda = new NodejsFunction(this, 'GenerateRoutine', {
       entry: 'src/handlers/generate-routine.ts',
       handler: 'handler',
       environment: {
@@ -35,16 +43,27 @@ export class GymGuruApiStack extends cdk.Stack {
         // OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
       },
       role: lambdaExecutionRole,
-      timeout: cdk.Duration.seconds(120)
+      timeout: cdk.Duration.seconds(120),
+      memorySize: 256
     })
 
-    const api = new apigateway.RestApi(this, 'GymGuruApi', {
+    const api = new RestApi(this, 'GymGuruApi', {
       restApiName: 'GymGuru API',
+      defaultCorsPreflightOptions: {
+        allowOrigins: Cors.ALL_ORIGINS,
+        // allowOrigins: ["http://localhost:3000"],
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: ['Content-Type'],
+        // allowHeaders: Cors.DEFAULT_HEADERS,
+        // allowHeaders: Cors.DEFAULT_HEADERS,
+        // allowCredentials: true
+      },
+      // apiKeySourceType: ApiKeySourceType.HEADER,
     });
 
     const generateRoutineResource = api.root.addResource('generate-routine');
-    generateRoutineResource.addMethod('POST', new apigateway.LambdaIntegration(generateRoutine), {
-    
+    const generateRoutineIntegration = new LambdaIntegration(generateRoutineLambda)
+    generateRoutineResource.addMethod('POST', generateRoutineIntegration, {
       authorizationType: apigateway.AuthorizationType.NONE,  // No authorization required
       methodResponses: [
         {
@@ -53,34 +72,50 @@ export class GymGuruApiStack extends cdk.Stack {
             'method.response.header.Access-Control-Allow-Origin': true,
             'method.response.header.Access-Control-Allow-Methods': true,
             'method.response.header.Access-Control-Allow-Headers': true,
-            "method.response.header.Access-Control-Allow-Credentials": true,
+            // "method.response.header.Access-Control-Allow-Credentials": true,
           },
         },
       ],
-    });
+    // });
 
-    generateRoutineResource.addMethod('OPTIONS', new apigateway.MockIntegration({
-      integrationResponses: [{
-        statusCode: '200',
-        responseParameters: {
-          'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",
-          'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,POST'",
-          'method.response.header.Access-Control-Allow-Headers': "'Content-Type,Authorization'",
-          "method.response.header.Access-Control-Allow-Credentials": "'true'",
-        },
-      }],
-      passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
-      requestTemplates: { "application/json": '{"statusCode": 200}' },
-    }), {
-      methodResponses: [{
-        statusCode: '200',
-        responseParameters: {
-          'method.response.header.Access-Control-Allow-Origin': true,
-          'method.response.header.Access-Control-Allow-Methods': true,
-          'method.response.header.Access-Control-Allow-Headers': true,
-          "method.response.header.Access-Control-Allow-Credentials": true,
-        },
-      }],
-    });
+    })
+    
+      // authorizationType: apigateway.AuthorizationType.NONE,  // No authorization required
+      // methodResponses: [
+      //   {
+      //     statusCode: '200',
+      //     responseParameters: {
+      //       'method.response.header.Access-Control-Allow-Origin': true,
+      //       'method.response.header.Access-Control-Allow-Methods': true,
+      //       'method.response.header.Access-Control-Allow-Headers': true,
+      //       "method.response.header.Access-Control-Allow-Credentials": true,
+      //     },
+      //   },
+      // ],
+    // });
+
+    // generateRoutineResource.addMethod('OPTIONS', new apigateway.MockIntegration({
+    //   integrationResponses: [{
+    //     statusCode: '200',
+    //     responseParameters: {
+    //       'method.response.header.Access-Control-Allow-Origin': "'*'",
+    //       'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,POST'",
+    //       'method.response.header.Access-Control-Allow-Headers': "'Content-Type,Authorization'",
+    //       "method.response.header.Access-Control-Allow-Credentials": "'true'",
+    //     },
+    //   }],
+    //   passthroughBehavior: apigateway.PassthroughBehavior.WHEN_NO_MATCH,
+    //   requestTemplates: { "application/json": '{"statusCode": 200}' },
+    // }), {
+    //   methodResponses: [{
+    //     statusCode: '200',
+    //     responseParameters: {
+    //       'method.response.header.Access-Control-Allow-Origin': true,
+    //       'method.response.header.Access-Control-Allow-Methods': true,
+    //       'method.response.header.Access-Control-Allow-Headers': true,
+    //       "method.response.header.Access-Control-Allow-Credentials": true,
+    //     },
+    //   }],
+    // });
   }
 }

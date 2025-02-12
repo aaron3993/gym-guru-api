@@ -18,13 +18,16 @@ export const fetchWorkoutPlanFromOpenAI = async (messages: Message[], openAIAPIK
         },
       }
     );
-
     const workoutPlan = response.data.choices[0].message.content.trim();
-
+    console.log(workoutPlan)
     return {
       statusCode: 200,
       message: 'Workout plan fetched successfully.',
       data: workoutPlan,
+      headers: {
+        "Access-Control-Allow-Origin": "http://localhost:3000",
+        "Access-Control-Allow-Credentials": "true",
+      },
     };
   } catch (error) {
     return {
