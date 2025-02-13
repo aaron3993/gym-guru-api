@@ -1,29 +1,9 @@
-import * as AWS from 'aws-sdk';
 import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
-import { fetchWorkoutPlanFromOpenAI } from '../services/openaiUtils';
 import { SQS } from "aws-sdk";
+import { getSecretByName } from '../utils/secretsManager';
 
 const sqs = new SQS();
-
-const secretsManager = new AWS.SecretsManager();
-
-async function getSecretByName(secretName: string): Promise<string> {
-  const secretsList: AWS.SecretsManager.ListSecretsResponse = await secretsManager.listSecrets().promise();
-  const secret: AWS.SecretsManager.SecretListEntry | undefined = secretsList.SecretList?.find(
-      (s) => s.Name === secretName
-  );
-
-  if (!secret || !secret.ARN) throw new Error(`Secret "${secretName}" not found`);
-
-  const response: AWS.SecretsManager.GetSecretValueResponse = await secretsManager
-      .getSecretValue({ SecretId: secret.ARN })
-      .promise();
-
-  if (!response.SecretString) throw new Error(`Secret "${secretName}" has no value`);
-
-  return response.SecretString;
-}
 
 async function verifyToken(token: string) {
   try {
@@ -83,18 +63,13 @@ export const handler = async (event: APIGatewayEvent) => {
     }
 
     await verifyToken(token);
-
-    // const openAISecretName = 'openai-api-key';
-    // const openAISecretString = await getSecretByName(openAISecretName);
-    // const openAISecrets = JSON.parse(openAISecretString);
-    // const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
       
     const messages = JSON.parse(event.body);
 
     const message = {
       prompt: messages
     };
-    console.log({message})
+
     await sqs
       .sendMessage({
         QueueUrl: process.env.SQS_QUEUE_URL!,
@@ -102,19 +77,7 @@ export const handler = async (event: APIGatewayEvent) => {
       })
       .promise();
 
-    return { statusCode: 202, body: "Request received. Processing..." };
-      // const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
-      // return {
-      //   statusCode: response.statusCode,
-      //   headers: {
-      //       "Content-Type": "application/json",
-      //       "Access-Control-Allow-Origin": "http://localhost:3000",
-      //       "Access-Control-Allow-Methods": "POST, OPTIONS",
-      //       "Access-Control-Allow-Headers": "Content-Type, Authorization",
-      //       "Access-Control-Allow-Credentials": "true",
-      //   },
-      //   body: response.data
-      // }
+    return { statusCode: 202, body: "Your workout routine is being generated..." };
     } catch (error) {
       console.error(error);
     return {
