@@ -2,6 +2,9 @@ import * as AWS from 'aws-sdk';
 import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
 import { fetchWorkoutPlanFromOpenAI } from '../services/openaiUtils';
+import { SQS } from "aws-sdk";
+
+const sqs = new SQS();
 
 const secretsManager = new AWS.SecretsManager();
 
@@ -43,7 +46,7 @@ export const handler = async (event: APIGatewayEvent) => {
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
             "Access-Control-Allow-Credentials": "true",
         },
-        body: JSON.stringify({ message: 'Authorization header missing' }),
+      body: JSON.stringify({ message: 'Authorization header missing' }),
       };
     }
 
@@ -53,8 +56,6 @@ export const handler = async (event: APIGatewayEvent) => {
         body: JSON.stringify({ message: "Request body is missing or empty" }),
       };
     }
-  
-    const { messages } = JSON.parse(event.body);
 
     const firebaseSecretName = 'firebase-service-account';
     const firebaseSecretString = await getSecretByName(firebaseSecretName);
@@ -62,47 +63,63 @@ export const handler = async (event: APIGatewayEvent) => {
     const fireBaseServiceAccountString = firebaseSecrets.FIREBASE_SERVICE_ACCOUNT_SECRET
 
     const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
+    if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert({
           projectId: parsedFireBaseServiceAccountObject.project_id,
           clientEmail: parsedFireBaseServiceAccountObject.client_email,
-          privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, '\n'),
+          privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, "\n"),
         }),
       });
+    }
 
-      const token = event.headers.Authorization?.split('Bearer ')[1];
-  
-      if (!token) {
-        return {
-          statusCode: 403,
-          body: JSON.stringify({ message: 'Unauthorized' }),
-        };
-      }
-  
-      await verifyToken(token);
+    const token = event.headers.Authorization?.split('Bearer ')[1];
 
-      const openAISecretName = 'openai-api-key';
-      const openAISecretString = await getSecretByName(openAISecretName);
-      const openAISecrets = JSON.parse(openAISecretString);
-      const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
-
-      const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
+    if (!token) {
       return {
-        statusCode: response.statusCode,
-        headers: {
-            "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:3000",
-            "Access-Control-Allow-Methods": "POST, OPTIONS",
-            "Access-Control-Allow-Headers": "Content-Type, Authorization",
-            "Access-Control-Allow-Credentials": "true",
-        },
-        body: response.data
-      }
+        statusCode: 403,
+        body: JSON.stringify({ message: 'Unauthorized' }),
+      };
+    }
+
+    await verifyToken(token);
+
+    // const openAISecretName = 'openai-api-key';
+    // const openAISecretString = await getSecretByName(openAISecretName);
+    // const openAISecrets = JSON.parse(openAISecretString);
+    // const openAIAPIKey: string = openAISecrets.OPENAI_API_KEY;
+      
+    const messages = JSON.parse(event.body);
+
+    const message = {
+      prompt: messages
+    };
+    console.log({message})
+    await sqs
+      .sendMessage({
+        QueueUrl: process.env.SQS_QUEUE_URL!,
+        MessageBody: JSON.stringify(message),
+      })
+      .promise();
+
+    return { statusCode: 202, body: "Request received. Processing..." };
+      // const response = await fetchWorkoutPlanFromOpenAI(messages, openAIAPIKey);
+      // return {
+      //   statusCode: response.statusCode,
+      //   headers: {
+      //       "Content-Type": "application/json",
+      //       "Access-Control-Allow-Origin": "http://localhost:3000",
+      //       "Access-Control-Allow-Methods": "POST, OPTIONS",
+      //       "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      //       "Access-Control-Allow-Credentials": "true",
+      //   },
+      //   body: response.data
+      // }
     } catch (error) {
       console.error(error);
-      return {
-        statusCode: 500,
-        body: JSON.stringify({ message: 'Lambda failed', error }),
+    return {
+      statusCode: 500,
+      body: JSON.stringify({ message: 'Lambda failed', error }),
     };
   }
 }

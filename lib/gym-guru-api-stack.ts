@@ -8,6 +8,7 @@ import {
   LambdaIntegration,
   RestApi,
 } from "aws-cdk-lib/aws-apigateway";
+import * as sqs from "aws-cdk-lib/aws-sqs";
 
 export class GymGuruApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
@@ -32,13 +33,20 @@ export class GymGuruApiStack extends cdk.Stack {
     }));
     
 
+    const queue = new sqs.Queue(this, "RoutineQueue", {
+      visibilityTimeout: cdk.Duration.seconds(120), // Match Lambda timeout
+    });
+  
     const generateRoutineLambda = new NodejsFunction(this, 'GenerateRoutine', {
       entry: 'src/handlers/generate-routine.ts',
       handler: 'handler',
       environment: {
-        // SECRET_NAME: fireBaseServiceAccount,
-        // OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+        SQS_QUEUE_URL: queue.queueUrl,
       },
+      // environment: {
+      //   // SECRET_NAME: fireBaseServiceAccount,
+      //   // OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
+      // },
       role: lambdaExecutionRole,
       timeout: cdk.Duration.seconds(120),
       memorySize: 256
@@ -58,7 +66,7 @@ export class GymGuruApiStack extends cdk.Stack {
     const generateRoutineResource = api.root.addResource('generate-routine');
     const generateRoutineIntegration = new LambdaIntegration(generateRoutineLambda)
     generateRoutineResource.addMethod('POST', generateRoutineIntegration, {
-      authorizationType: apigateway.AuthorizationType.NONE,  // No authorization required
+      authorizationType: apigateway.AuthorizationType.NONE,
       methodResponses: [
         {
           statusCode: '200',
@@ -71,5 +79,10 @@ export class GymGuruApiStack extends cdk.Stack {
         },
       ],
     })
+
+    queue.grantSendMessages(generateRoutineLambda);
+
+    new cdk.CfnOutput(this, "QueueURL", { value: queue.queueUrl });
+
   }
 }
