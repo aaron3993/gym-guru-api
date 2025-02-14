@@ -41,8 +41,8 @@ export const handler = async (event: APIGatewayEvent) => {
     const firebaseSecretString = await getSecretByName(firebaseSecretName);
     const firebaseSecrets = JSON.parse(firebaseSecretString);
     const fireBaseServiceAccountString = firebaseSecrets.FIREBASE_SERVICE_ACCOUNT_SECRET
-
     const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
+
     if (!admin.apps.length) {
       admin.initializeApp({
         credential: admin.credential.cert({
@@ -63,11 +63,14 @@ export const handler = async (event: APIGatewayEvent) => {
     }
 
     await verifyToken(token);
-      
-    const messages = JSON.parse(event.body);
+
+    const { criteria, messages, userId, jobId } = JSON.parse(event.body);
 
     const message = {
-      prompt: messages
+      criteria,
+      messages,
+      userId,
+      jobId
     };
 
     await sqs
