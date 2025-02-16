@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
 import { SQS } from "aws-sdk";
-import { getFirestoreInstance } from '../utils/firestoreUtils';
+import { initializeFirebase } from '../utils/firestoreUtils';
 
 const sqs = new SQS();
 
@@ -37,7 +37,7 @@ export const handler = async (event: APIGatewayEvent) => {
       };
     }
 
-    await getFirestoreInstance()
+    await initializeFirebase()
 
     const token = event.headers.Authorization?.split('Bearer ')[1];
 

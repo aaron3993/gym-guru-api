@@ -1,32 +1,29 @@
 import * as admin from "firebase-admin";
-import { getSecretByName } from "./secretsManager";
+import { getSSMParameter } from "./parameterStore";
 
 let db: FirebaseFirestore.Firestore | null = null;
 
-async function initializeFirebase(): Promise<FirebaseFirestore.Firestore> {
-  if (!db) {
-    const firebaseSecretName = "firebase-service-account";
-    const firebaseSecretString = await getSecretByName(firebaseSecretName);
-    const firebaseSecrets = JSON.parse(firebaseSecretString);
-    const fireBaseServiceAccountString = firebaseSecrets.FIREBASE_SERVICE_ACCOUNT_SECRET;
-    const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString);
+export async function initializeFirebase(): Promise<void> {
+  if (!admin.apps.length) {
+    const firebaseParameterName = "firebase-service-account";
+    const firebaseParameterValue = await getSSMParameter(firebaseParameterName);
+    const parsedServiceAccount = JSON.parse(firebaseParameterValue);
 
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: parsedFireBaseServiceAccountObject.project_id,
-          clientEmail: parsedFireBaseServiceAccountObject.client_email,
-          privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, "\n"),
-        }),
-      });
-    }
+    admin.initializeApp({
+      credential: admin.credential.cert({
+        projectId: parsedServiceAccount.project_id,
+        clientEmail: parsedServiceAccount.client_email,
+        privateKey: parsedServiceAccount.private_key.replace(/\\n/g, "\n"),
+      }),
+    });
 
     db = admin.firestore();
   }
-
-  return db;
 }
 
 export async function getFirestoreInstance(): Promise<FirebaseFirestore.Firestore> {
-  return await initializeFirebase();
+  if (!db) {
+    await initializeFirebase();
+  }
+  return db!;
 }
