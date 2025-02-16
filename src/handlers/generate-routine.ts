@@ -1,7 +1,7 @@
 import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
 import { SQS } from "aws-sdk";
-import { getSecretByName } from '../utils/secretsManager';
+import { getFirestoreInstance } from '../utils/firestoreUtils';
 
 const sqs = new SQS();
 
@@ -37,21 +37,7 @@ export const handler = async (event: APIGatewayEvent) => {
       };
     }
 
-    const firebaseSecretName = 'firebase-service-account';
-    const firebaseSecretString = await getSecretByName(firebaseSecretName);
-    const firebaseSecrets = JSON.parse(firebaseSecretString);
-    const fireBaseServiceAccountString = firebaseSecrets.FIREBASE_SERVICE_ACCOUNT_SECRET
-    const parsedFireBaseServiceAccountObject = JSON.parse(fireBaseServiceAccountString)
-
-    if (!admin.apps.length) {
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: parsedFireBaseServiceAccountObject.project_id,
-          clientEmail: parsedFireBaseServiceAccountObject.client_email,
-          privateKey: parsedFireBaseServiceAccountObject.private_key.replace(/\\n/g, "\n"),
-        }),
-      });
-    }
+    await getFirestoreInstance()
 
     const token = event.headers.Authorization?.split('Bearer ')[1];
 

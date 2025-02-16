@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { Message } from "../interfaces/messages";
+import { Message } from "../interfaces/Messages";
 
 export const fetchWorkoutPlanFromOpenAI = async (messages: Message[], openAIAPIKey: string) => {
   try {

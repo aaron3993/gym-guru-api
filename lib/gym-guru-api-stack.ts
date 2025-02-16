@@ -16,9 +16,16 @@ export class GymGuruApiStack extends cdk.Stack {
     const lambdaExecutionRole = new iam.Role(this, 'LambdaExecutionRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
+    // lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
+    //   actions: ['secretsmanager:ListSecrets', 'secretsmanager:GetSecretValue'],
+    //   resources: ['*'],
+    // }));
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
-      actions: ['secretsmanager:ListSecrets', 'secretsmanager:GetSecretValue'],
-      resources: ['*'],
+      actions: ['ssm:GetParameter'],
+      resources: [
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/gemini-api-key`,
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/firebase-service-account`
+      ],
     }));
 
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
