@@ -1,26 +1,114 @@
-import axios from "axios";
-import { GeminiMessage } from "../interfaces/Messages"
+import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
 
-export const fetchWorkoutPlanFromGemini = async (messages: GeminiMessage[], googleAPIKey: string) => {
+export const fetchWorkoutPlanFromGemini = async (prompt: any, googleAPIKey: string) => {
   try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${googleAPIKey}`,
-      {
-        contents: messages.map((msg) => ({
-          role: msg.role === "system" ? "model" : msg.role,
-          parts: msg.parts,
-        })),
-      },
-      {
-        headers: {
-          "Content-Type": "application/json",
+    const genAI = new GoogleGenerativeAI(googleAPIKey);
+
+    const schema = {
+      description: "Weekly workout plan",
+      type: SchemaType.OBJECT,
+      properties: {
+        title: {
+          type: SchemaType.STRING,
+          description: "Title of the workout plan",
+          nullable: false,
         },
-      }
-    );
+        fitnessLevel: {
+          type: SchemaType.STRING,
+          description: "The fitness level of the individual",
+          nullable: false,
+        },
+        goal: {
+          type: SchemaType.STRING,
+          description: "The fitness goal of the individual",
+          nullable: false,
+        },
+        days: {
+          type: SchemaType.ARRAY,
+          description: "Array of workout days in the week",
+          items: {
+            type: SchemaType.OBJECT,
+            properties: {
+              day: {
+                type: SchemaType.STRING,
+                description: "The day of the week",
+                nullable: false,
+              },
+              dayOfWeek: {
+                type: SchemaType.INTEGER,
+                description: "The day of the week as a number",
+                nullable: false,
+              },
+              name: {
+                type: SchemaType.STRING,
+                description: "Muscle group trained on this day",
+                nullable: false,
+              },
+              exercises: {
+                type: SchemaType.ARRAY,
+                description: "Exercises performed on this day",
+                items: {
+                  type: SchemaType.OBJECT,
+                  properties: {
+                    id: {
+                      type: SchemaType.STRING,
+                      description: "Exercise ID",
+                      nullable: false,
+                    },
+                    name: {
+                      type: SchemaType.STRING,
+                      description: "Name of the exercise in lowercase",
+                      nullable: false,
+                    },
+                    gifUrl: {
+                      type: SchemaType.STRING,
+                      description: "URL to the exercise's GIF",
+                      nullable: false,
+                    },
+                    sets: {
+                      type: SchemaType.INTEGER,
+                      description: "Number of sets",
+                      nullable: false,
+                    },
+                    reps: {
+                      type: SchemaType.STRING,
+                      description: "Reps range",
+                      nullable: false,
+                    },
+                    rest: {
+                      type: SchemaType.STRING,
+                      description: "Rest duration",
+                      nullable: false,
+                    },
+                  },
+                  required: ["id", "name", "gifUrl", "sets", "reps", "rest"],
+                },
+              },
+            },
+            required: ["day", "dayOfWeek", "name", "exercises"],
+          },
+        },
+      },
+      required: ["title", "fitnessLevel", "goal", "days"],
+    };
 
-    const workoutPlan =
-      JSON.parse(response.data.candidates?.[0]?.content?.parts?.[0]?.text?.trim())
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-pro",
+      generationConfig: {
+        responseMimeType: "application/json",
+        responseSchema: schema,
+      },
+    });
 
+    const result = await model.generateContent({
+      contents: [{
+        role: "user",
+        parts: [{ text: prompt }]
+      }]
+    });
+
+    const workoutPlan = JSON.parse(result.response.text())
+    
     if (!workoutPlan)
       throw new Error("No response received from Google Gemini");
 
