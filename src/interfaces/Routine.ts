@@ -1,3 +1,8 @@
+export interface WorkoutCriteria {
+  goal: string;
+  fitnessLevel: string;
+}
+
 export interface Exercise {
     id: string;
     name: string;

@@ -66,7 +66,17 @@ export const handler = async (event: APIGatewayEvent) => {
       })
       .promise();
 
-    return { statusCode: 202, body: "Your workout routine is being generated..." };
+    return {
+      statusCode: 202,
+      body: "Your workout routine is being generated...",
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+        "Access-Control-Allow-Methods": "POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+        "Access-Control-Allow-Credentials": "true",
+      },
+    }
     } catch (error) {
       console.error(error);
     return {

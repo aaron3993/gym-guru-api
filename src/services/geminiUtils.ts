@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { Routine } from "../interfaces/Routine";
 
-export const fetchWorkoutPlanFromGemini = async (prompt: any, googleAPIKey: string) => {
+export const fetchWorkoutPlanFromGemini = async (prompt: string, googleAPIKey: string) => {
   try {
     const genAI = new GoogleGenerativeAI(googleAPIKey);
 
@@ -107,15 +108,15 @@ export const fetchWorkoutPlanFromGemini = async (prompt: any, googleAPIKey: stri
       }]
     });
 
-    const workoutPlan = JSON.parse(result.response.text())
+    const routine: Routine = JSON.parse(result.response.text())
     
-    if (!workoutPlan)
+    if (!routine)
       throw new Error("No response received from Google Gemini");
 
     return {
       statusCode: 200,
       message: "Workout plan fetched successfully.",
-      data: workoutPlan,
+      data: routine,
     };
   } catch (error: any) {
     console.error("Error fetching from Gemini:", error);

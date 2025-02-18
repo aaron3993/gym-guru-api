@@ -1,23 +1,24 @@
 import { Timestamp } from "firebase-admin/firestore";
+import { Day, Exercise, Routine, WorkoutCriteria } from "../interfaces/Routine";
 
-export const saveCompleteWorkoutInfo = async (db: FirebaseFirestore.Firestore, userId: string, workoutPlan: any, workoutInfo: any) => {
+export const saveCompleteWorkoutInfo = async (db: FirebaseFirestore.Firestore, userId: string, routine: Routine, workoutCriteria: WorkoutCriteria) => {
     const batch = db.batch();
 
     try {
         const userRef = db.collection("users").doc(userId);
-        batch.set(userRef, workoutInfo, { merge: true });
+        batch.set(userRef, workoutCriteria, { merge: true });
 
         const routineRef = db.collection("routines").doc();
         const routineData = {
-        title: workoutPlan.title,
-        fitnessLevel: workoutPlan.fitnessLevel,
-        goal: workoutPlan.goal,
+        title: routine.title,
+        fitnessLevel: routine.fitnessLevel,
+        goal: routine.goal,
         userId: userId,
         createdAt: Timestamp.now(),
         };
         batch.set(routineRef, routineData);
 
-        workoutPlan.days.forEach((day: any) => {
+        routine.days.forEach((day: Day) => {
         const workoutRef = db.collection("workouts").doc();
         const workoutData = {
             name: day.name,
@@ -28,7 +29,7 @@ export const saveCompleteWorkoutInfo = async (db: FirebaseFirestore.Firestore, u
             exercises:
             day.name.toLowerCase() === "rest"
                 ? []
-                : day.exercises.map((exercise: any) => ({
+                : day.exercises.map((exercise: Exercise) => ({
                     id: exercise.id,
                     name: exercise.name,
                     gifUrl: exercise.gifUrl,
