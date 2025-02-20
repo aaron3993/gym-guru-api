@@ -1,10 +1,10 @@
-import { APIGatewayEvent } from 'aws-lambda';
+import { APIGatewayEvent, APIGatewayProxyHandler } from 'aws-lambda';
 import { SQS } from "aws-sdk";
 import { initializeFirebase, verifyToken } from '../utils/firestoreUtils';
 
 const sqs = new SQS();
 
-export const handler = async (event: APIGatewayEvent) => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) => {
   const origin: string | undefined = event.headers?.origin;
 
   const allowedOrigins: string[] = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
@@ -59,7 +59,7 @@ export const handler = async (event: APIGatewayEvent) => {
         MessageBody: JSON.stringify(message),
       })
       .promise();
-      console.log('generate routine lambda done')
+
     return {
       statusCode: 202,
       body: "Your workout routine is being generated...",

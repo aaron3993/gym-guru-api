@@ -1,9 +1,9 @@
-import { APIGatewayProxyHandler } from "aws-lambda";
+import { APIGatewayEvent, APIGatewayProxyHandler } from "aws-lambda";
 import axios from "axios";
 import { getSSMParameter } from "../utils/parameterStore";
 import { initializeFirebase, verifyToken } from "../utils/firestoreUtils";
 
-export const handler: APIGatewayProxyHandler = async (event) => {
+export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) => {
     const origin: string | undefined = event.headers?.origin;
 
     const allowedOrigins: string[] = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
