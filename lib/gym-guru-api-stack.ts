@@ -12,14 +12,10 @@ export class GymGuruApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const fireBaseServiceAccount = 'firebase-service-account'
     const lambdaExecutionRole = new iam.Role(this, 'LambdaExecutionRole', {
       assumedBy: new iam.ServicePrincipal('lambda.amazonaws.com'),
     });
-    // lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
-    //   actions: ['secretsmanager:ListSecrets', 'secretsmanager:GetSecretValue'],
-    //   resources: ['*'],
-    // }));
+
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
       actions: ['ssm:GetParameter'],
       resources: [
@@ -36,12 +32,13 @@ export class GymGuruApiStack extends cdk.Stack {
       ],
       resources: ['arn:aws:logs:*:*:*'],
     }));
+
+    const allowedOrigins = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
     
     const api = new RestApi(this, 'GymGuruApi', {
       restApiName: 'GymGuru API',
       defaultCorsPreflightOptions: {
-        allowOrigins: Cors.ALL_ORIGINS,
-        // allowOrigins: ["http://localhost:3000"],
+        allowOrigins: allowedOrigins,
         allowMethods: Cors.ALL_METHODS,
         allowHeaders: Cors.DEFAULT_HEADERS,
         allowCredentials: true
@@ -49,7 +46,7 @@ export class GymGuruApiStack extends cdk.Stack {
     });
 
     const queue = new sqs.Queue(this, "RoutineQueue", {
-      visibilityTimeout: cdk.Duration.seconds(120), // Match Lambda timeout
+      visibilityTimeout: cdk.Duration.seconds(60),
     });
   
     const generateRoutineLambda = new NodejsFunction(this, 'GenerateRoutine', {
@@ -58,12 +55,8 @@ export class GymGuruApiStack extends cdk.Stack {
       environment: {
         SQS_QUEUE_URL: queue.queueUrl,
       },
-      // environment: {
-      //   // SECRET_NAME: fireBaseServiceAccount,
-      //   // OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-      // },
       role: lambdaExecutionRole,
-      timeout: cdk.Duration.seconds(120),
+      timeout: cdk.Duration.seconds(60),
       memorySize: 256
     })
 
@@ -90,7 +83,7 @@ export class GymGuruApiStack extends cdk.Stack {
       entry: "src/handlers/process-routine.ts",
       handler: "handler",
       role: lambdaExecutionRole,
-      timeout: cdk.Duration.seconds(120),
+      timeout: cdk.Duration.seconds(60),
       memorySize: 256,
     });
 

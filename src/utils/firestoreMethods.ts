@@ -59,8 +59,6 @@ export const completeJobInFirestore = async (db: FirebaseFirestore.Firestore, jo
         status: "completed",
         routineId,
       });
-  
-      console.log(`Job ${jobId} marked as completed with routineId: ${routineId}`);
     } catch (error) {
       console.error("Error updating job in Firestore:", error);
       throw error;

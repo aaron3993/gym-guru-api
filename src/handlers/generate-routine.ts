@@ -5,6 +5,8 @@ import { initializeFirebase } from '../utils/firestoreUtils';
 
 const sqs = new SQS();
 
+const allowedOrigins: string[] = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
+
 async function verifyToken(token: string) {
   try {
     await admin.auth().verifyIdToken(token);
@@ -15,13 +17,15 @@ async function verifyToken(token: string) {
 }
 
 export const handler = async (event: APIGatewayEvent) => {
+  const origin: string | undefined = event.headers?.origin;
+
   try {
     if (!event.headers?.Authorization) {
       return {
         statusCode: 400,
         headers: {
             "Content-Type": "application/json",
-            "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+            "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : "https://gymguru-37ed9.web.app/",
             "Access-Control-Allow-Methods": "POST, OPTIONS",
             "Access-Control-Allow-Headers": "Content-Type, Authorization",
             "Access-Control-Allow-Credentials": "true",
@@ -72,7 +76,7 @@ export const handler = async (event: APIGatewayEvent) => {
       body: "Your workout routine is being generated...",
       headers: {
         "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "http://localhost:3000", // Allow any origin
+        "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : "https://gymguru-37ed9.web.app/",
         "Access-Control-Allow-Methods": "POST, OPTIONS",
         "Access-Control-Allow-Headers": "Content-Type, Authorization",
         "Access-Control-Allow-Credentials": "true",
