@@ -27,3 +27,13 @@ export async function getFirestoreInstance(): Promise<FirebaseFirestore.Firestor
   }
   return db!;
 }
+
+
+export async function verifyToken(token: string) {
+  try {
+    await admin.auth().verifyIdToken(token);
+  } catch (error) {
+    console.error('Error verifying token:', error);
+    throw new Error('Unauthorized');
+  }
+}
