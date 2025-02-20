@@ -1,3 +1,12 @@
+export interface ExerciseDetail {
+  id: string;
+  gifUrl: string;
+}
+
+export interface ExerciseNamesAndDetails {
+  [exerciseName: string]: ExerciseDetail;
+}
+
 export interface WorkoutCriteria {
   goal: string;
   fitnessLevel: string;

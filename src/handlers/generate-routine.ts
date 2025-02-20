@@ -50,11 +50,12 @@ export const handler = async (event: APIGatewayEvent) => {
 
     await verifyToken(token);
 
-    const { criteria, prompt, userId, jobId } = JSON.parse(event.body);
+    const { criteria, prompt, exerciseDetails, userId, jobId } = JSON.parse(event.body);
 
     const message = {
       criteria,
       prompt,
+      exerciseDetails,
       userId,
       jobId
     };
