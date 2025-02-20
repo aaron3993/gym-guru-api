@@ -11,7 +11,7 @@ export async function handler(event: SQSEvent) {
     
     for (const record of event.Records) {
         const body = JSON.parse(record.body);
-        const { criteria, prompt, exerciseDetails, userId, jobId } = body
+        const { criteria, exerciseDetails, userId, jobId } = body
 
         try {
             const geminiApiKeyString = 'gemini-api-key'
@@ -32,6 +32,6 @@ export async function handler(event: SQSEvent) {
             console.error("Gemini Request Failed:", error);
         }
     }
-
+    console.log('process routine lambda done')
     return { statusCode: 200 };
 }

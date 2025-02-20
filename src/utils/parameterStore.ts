@@ -11,7 +11,6 @@ export const getSSMParameter = async (parameterName: string): Promise<string> =>
     });
     const response = await ssmClient.send(command);
     if (response.Parameter?.Value) {
-      console.log(`Retrieved parameter: ${parameterName}`);
       return response.Parameter.Value;
     } else {
       throw new Error(`Parameter not found: ${parameterName}`);

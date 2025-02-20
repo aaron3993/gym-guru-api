@@ -1,23 +1,13 @@
-import * as admin from 'firebase-admin';
 import { APIGatewayEvent } from 'aws-lambda';
 import { SQS } from "aws-sdk";
-import { initializeFirebase } from '../utils/firestoreUtils';
+import { initializeFirebase, verifyToken } from '../utils/firestoreUtils';
 
 const sqs = new SQS();
 
-const allowedOrigins: string[] = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
-
-async function verifyToken(token: string) {
-  try {
-    await admin.auth().verifyIdToken(token);
-  } catch (error) {
-    console.error('Error verifying token:', error);
-    throw new Error('Unauthorized');
-  }
-}
-
 export const handler = async (event: APIGatewayEvent) => {
   const origin: string | undefined = event.headers?.origin;
+
+  const allowedOrigins: string[] = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
 
   try {
     if (!event.headers?.Authorization) {
@@ -33,14 +23,7 @@ export const handler = async (event: APIGatewayEvent) => {
       body: JSON.stringify({ message: 'Authorization header missing' }),
       };
     }
-
-    if (!event.body) {
-      return {
-        statusCode: 400,
-        body: JSON.stringify({ message: "Request body is missing or empty" }),
-      };
-    }
-
+    
     await initializeFirebase()
 
     const token = event.headers.Authorization?.split('Bearer ')[1];
@@ -54,11 +37,17 @@ export const handler = async (event: APIGatewayEvent) => {
 
     await verifyToken(token);
 
-    const { criteria, prompt, exerciseDetails, userId, jobId } = JSON.parse(event.body);
+    if (!event.body) {
+      return {
+        statusCode: 400,
+        body: JSON.stringify({ message: "Request body is missing or empty" }),
+      };
+    }
+
+    const { criteria, exerciseDetails, userId, jobId } = JSON.parse(event.body);
 
     const message = {
       criteria,
-      prompt,
       exerciseDetails,
       userId,
       jobId
@@ -70,7 +59,7 @@ export const handler = async (event: APIGatewayEvent) => {
         MessageBody: JSON.stringify(message),
       })
       .promise();
-
+      console.log('generate routine lambda done')
     return {
       statusCode: 202,
       body: "Your workout routine is being generated...",
