@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - code/refactor-openai-logic
 
 jobs:
   production-deployment:
