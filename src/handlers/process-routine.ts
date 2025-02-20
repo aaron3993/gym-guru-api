@@ -18,7 +18,7 @@ export async function handler(event: SQSEvent) {
             const geminiApiKey = await getSSMParameter(geminiApiKeyString)
             if (!geminiApiKey) throw new Error("Google API Key not found");
 
-            const response = await fetchWorkoutPlanFromGemini(prompt, geminiApiKey)
+            const response = await fetchWorkoutPlanFromGemini(criteria, exerciseDetails, geminiApiKey)
             const routineWithoutDetails = response.data
             if (!routineWithoutDetails) throw new Error("No routine fetched from Gemini");
 

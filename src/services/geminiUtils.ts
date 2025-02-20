@@ -1,11 +1,44 @@
 import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import { Routine } from "../interfaces/Routine";
+import { ExerciseNamesAndDetails, Routine, WorkoutCriteria } from "../interfaces/Routine";
+import { formatExercisesForInput, formatGoalsAndFitnessLevelsText } from "../utils/routineUtils";
 
-export const fetchWorkoutPlanFromGemini = async (prompt: string, googleAPIKey: string) => {
+export const fetchWorkoutPlanFromGemini = async (criteria: WorkoutCriteria, exerciseDetails: ExerciseNamesAndDetails, googleAPIKey: string) => {
   try {
     const genAI = new GoogleGenerativeAI(googleAPIKey);
 
-    const schema = {
+    const exerciseNamesString = formatExercisesForInput(exerciseDetails);
+    
+    const prompt = `
+    Create a structured JSON format for a weekly workout plan for someone whose goal is ${
+      criteria.goal
+    } and fitness level is ${criteria.fitnessLevel}.
+    Only output the JSON and no other text.
+    Use the following exercises in your plan:
+    
+    ${exerciseNamesString}
+    
+    The format should include:
+    - title: ${criteria.fitnessLevel} ${formatGoalsAndFitnessLevelsText(
+    criteria.goal
+  )} Routine (Capitalize first letters)
+    - fitnessLevel
+    - goal
+    - days. Each day has the following attributes:
+      - day: e.g., "Monday"
+      - dayOfWeek: e.g., 1
+      - name: Muscle group trained
+      - exercises: An array of 4-7 exercises per weight training day. Each exercise should have the following attributes:
+        - id: Empty string
+        - name: The name of the exercise in lowercase
+        - gifUrl: Empty string
+        - sets: The number of sets (integer)
+        - reps: A string to represent the range of reps (e.g., "8-12")
+        - rest: The rest duration (e.g., "60 seconds")
+      - Rest days should have an empty exercises array.
+      - Include cardio where necessary.
+    `;
+
+    const outputSchema = {
       description: "Weekly workout plan",
       type: SchemaType.OBJECT,
       properties: {
@@ -98,7 +131,7 @@ export const fetchWorkoutPlanFromGemini = async (prompt: string, googleAPIKey: s
       model: "gemini-2.0-flash",
       generationConfig: {
         responseMimeType: "application/json",
-        responseSchema: schema,
+        responseSchema: outputSchema,
       },
     });
 

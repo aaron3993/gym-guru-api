@@ -1,4 +1,4 @@
-import { Day, Exercise, ExerciseNamesAndDetails, Routine } from "../interfaces/Routine";
+import { Day, Exercise, ExerciseNamesAndDetails, GoalMapping, Routine } from "../interfaces/Routine";
 
 export const addExerciseDetailsToRoutine = (routineWithoutGifUrls: Routine, exerciseDetails: ExerciseNamesAndDetails) => {
     return {
@@ -18,4 +18,23 @@ export const addExerciseDetailsToRoutine = (routineWithoutGifUrls: Routine, exer
             : [],
       })),
     };
-  };
+};
+
+export const formatGoalsAndFitnessLevelsText = (text: string) => {
+    const goalMapping: GoalMapping = {
+      weightLoss: "Weight Loss",
+      muscleGain: "Muscle Gain",
+      generalFitness: "General Fitness",
+    };
+  
+    if (!text) return text;
+    if (goalMapping[text]) return goalMapping[text];
+    return text
+      .toLowerCase()
+      .replace(/(?:^|\s)\w/g, (match) => match.toUpperCase());
+};
+  
+export const formatExercisesForInput = (exerciseDetails: ExerciseNamesAndDetails) => {
+    return Object.keys(exerciseDetails).join(",");
+};
+  

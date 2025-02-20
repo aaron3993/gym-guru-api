@@ -82,7 +82,7 @@ export const handler = async (event: APIGatewayEvent) => {
       console.error(error);
     return {
       statusCode: 500,
-      body: JSON.stringify({ message: 'Lambda failed', error }),
+      body: JSON.stringify({ message: 'Routine generation failed', error }),
     };
   }
 }

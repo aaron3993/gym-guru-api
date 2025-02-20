@@ -12,6 +12,10 @@ export interface WorkoutCriteria {
   fitnessLevel: string;
 }
 
+export interface GoalMapping {
+  [key: string]: string;
+}
+
 export interface Exercise {
     id: string;
     name: string;
