@@ -6,7 +6,16 @@ import { initializeFirebase, verifyToken } from "../utils/firestoreUtils";
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) => {
     const origin: string | undefined = event.headers?.origin;
 
-    const allowedOrigins: string[] = ["http://localhost:3000", "https://gymguru-37ed9.web.app"];
+    const stage = process.env.STAGE;
+    let allowedOrigins: string[];
+
+    if (stage === 'production') {
+        allowedOrigins = ["https://gymguru-37ed9.web.app"];
+    } else if (stage === 'staging') {
+        allowedOrigins = ["http://localhost:3000", "https://gym-guru-staging.web.app"];
+    } else { // Default or development
+        allowedOrigins = ["http://localhost:3000", "https://gym-guru-staging.web.app", "https://gymguru-37ed9.web.app"]; // Or a more restrictive default
+    }
 
     try {
         if (!event.headers?.Authorization) {
@@ -14,8 +23,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) =>
                 statusCode: 400,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : "https://gymguru-37ed9.web.app/",
-                    "Access-Control-Allow-Methods": "POST, OPTIONS",
+                    "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
                     "Access-Control-Allow-Headers": "Content-Type, Authorization",
                     "Access-Control-Allow-Credentials": "true",
                 },
@@ -30,6 +39,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) =>
         if (!token) {
             return {
                 statusCode: 403,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                    "Access-Control-Allow-Methods": "GET, OPTIONS",
+                    "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                    "Access-Control-Allow-Credentials": "true",
+                },
                 body: JSON.stringify({ message: 'Unauthorized' }),
             };
         }
@@ -54,8 +70,8 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) =>
             body: JSON.stringify(response.data),
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : "https://gymguru-37ed9.web.app/",
-                "Access-Control-Allow-Methods": "POST, OPTIONS",
+                "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
                 "Access-Control-Allow-Headers": "Content-Type, Authorization",
                 "Access-Control-Allow-Credentials": "true",
             },
@@ -64,6 +80,13 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) =>
         console.error("Error in fetchAllExercises:", error);
         return {
             statusCode: 500,
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true",
+            },
             body: JSON.stringify({ message: 'Error fetching all exercises', error }),
         };
     }
