@@ -36,9 +36,9 @@ export class GymGuruApiStack extends cdk.Stack {
     lambdaExecutionRole.addToPolicy(new iam.PolicyStatement({
       actions: ['ssm:GetParameter'],
       resources: [
-        `arn:aws:ssm:${this.region}:${this.account}:parameter/gemini-api-key`,
-        `arn:aws:ssm:${this.region}:${this.account}:parameter/firebase-service-account`,
-        `arn:aws:ssm:${this.region}:${this.account}:parameter/rapid-api-key`
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/gemini-api-key`,
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/rapid-api-key`,
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/firebase-service-account`,
       ],
     }));
 
