@@ -8,6 +8,9 @@ on:
 jobs:
   production-deployment:
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
 
     steps:
       - name: Checkout Code
@@ -16,12 +19,11 @@ jobs:
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_KEY }}
+          role-to-assume: arn:aws:iam::122610492874:role/GitHubActionsOIDC-DeployProductionRole
           aws-region: us-east-1
 
       - name: Install Dependencies
         run: npm install
 
-      - name: Deploy CDK Stack
-        run: npx cdk deploy --require-approval never
+      - name: CDK Deploy Production
+        run: npx cdk deploy GymGuruApiStack-production --require-approval never -c stage=production
