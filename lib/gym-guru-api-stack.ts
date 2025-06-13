@@ -11,7 +11,7 @@ import { Cors, LambdaIntegration, RestApi } from "aws-cdk-lib/aws-apigateway";
 interface GymGuruApiStackProps extends cdk.StackProps {
   stage: string;
   apiVersion: string;
-}
+} 
 
 export class GymGuruApiStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: GymGuruApiStackProps) {
@@ -39,6 +39,7 @@ export class GymGuruApiStack extends cdk.Stack {
         `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/gemini-api-key`,
         `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/rapid-api-key`,
         `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/firebase-service-account`,
+        `arn:aws:ssm:${this.region}:${this.account}:parameter/${props.stage}/neon-db-url`,
       ],
     }));
 
