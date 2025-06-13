@@ -1,0 +1,29 @@
+name: Deploy CDK Application to Staging
+
+on:
+  push:
+    branches:
+      - staging
+
+jobs:
+  staging-deployment:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::122610492874:role/GitHubActionsOIDC-DeployStagingRole
+          aws-region: us-east-1
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: CDK Deploy Staging
+        run: npx cdk deploy GymGuruApiStack-staging --require-approval never -c stage=staging
