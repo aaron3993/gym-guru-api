@@ -25,5 +25,18 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
+      - name: Get DB URL from SSM
+        id: ssm
+        run: |
+          value=$(aws ssm get-parameter --name "/staging/neon-db-url" --with-decryption --query "Parameter.Value" --output text)
+          echo "DATABASE_URL=$value" >> $GITHUB_ENV
+
+      - name: Run Drizzle migrations
+        run: |
+          if ! npx drizzle-kit push; then
+            echo "Migration failed"
+            exit 1
+          fi
+
       - name: CDK Deploy Staging
         run: npx cdk deploy GymGuruApiStack-staging --require-approval never -c stage=staging
