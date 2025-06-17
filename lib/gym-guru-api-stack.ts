@@ -18,6 +18,7 @@ export class GymGuruApiStack extends cdk.Stack {
     super(scope, id, props);
 
     // Environment-specific resource names
+    const registerUserName = `RegisterUser-${props.stage}`
     const geminiApiName = `GeminiApi-${props.stage}`;
     const rapidApiName = `RapidApi-${props.stage}`;
     const queueName = `RoutineQueue-${props.stage}`;
@@ -55,6 +56,21 @@ export class GymGuruApiStack extends cdk.Stack {
     const allowedOrigins = props.stage === 'production' 
       ? ["https://gymguru-37ed9.web.app"]
       : ["http://localhost:3000", "https://gym-guru-staging.web.app"];
+
+    const registerUser = new RestApi(this, registerUserName, {
+      restApiName: registerUserName,
+      defaultCorsPreflightOptions: {
+        allowOrigins: allowedOrigins,
+        allowMethods: Cors.ALL_METHODS,
+        allowHeaders: Cors.DEFAULT_HEADERS,
+        allowCredentials: true
+      },
+      deployOptions: {
+        stageName: props.apiVersion,
+        loggingLevel: props.stage === 'production' ? apigateway.MethodLoggingLevel.ERROR : apigateway.MethodLoggingLevel.INFO,
+        dataTraceEnabled: props.stage !== 'production',
+      }
+    })
     
     const geminiApi = new RestApi(this, geminiApiName, {
       restApiName: geminiApiName,
@@ -90,6 +106,34 @@ export class GymGuruApiStack extends cdk.Stack {
       queueName: queueName,
       visibilityTimeout: cdk.Duration.seconds(queueVisibilityTimeout),
       retentionPeriod: props.stage === 'production' ? cdk.Duration.days(14) : cdk.Duration.days(4),
+    });
+
+    const registerUserLambda = new NodejsFunction(this, `RegisterUserLambda-${props.stage}`, {
+      entry: "src/handlers/register-user.ts",
+      handler: "handler",
+      role: lambdaExecutionRole,
+      timeout: cdk.Duration.seconds(lambdaTimeout),
+      memorySize: lambdaMemory,
+      environment: {
+        STAGE: props.stage,
+        API_VERSION: props.apiVersion,
+      }
+    })
+
+    const registerUserResource = rapidApi.root.addResource("register-user");
+    registerUserResource.addMethod("POST", new LambdaIntegration(registerUserLambda), {
+      authorizationType: apigateway.AuthorizationType.NONE,
+      methodResponses: [
+        {
+          statusCode: '200',
+          responseParameters: {
+            'method.response.header.Access-Control-Allow-Origin': true,
+            'method.response.header.Access-Control-Allow-Methods': true,
+            'method.response.header.Access-Control-Allow-Headers': true,
+            "method.response.header.Access-Control-Allow-Credentials": true,
+          },
+        },
+      ],
     });
   
     const fetchExercisesLambda = new NodejsFunction(this, `FetchExercisesLambda-${props.stage}`, {
