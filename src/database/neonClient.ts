@@ -8,8 +8,8 @@ export async function getDbPool(): Promise<Pool> {
   if (!pool) {
     const stage = process.env.STAGE || 'staging';
     const config = environments[stage];
-    
-    const dbUrl = await getSSMParameter("/neon-db-url");
+
+    const dbUrl = await getSSMParameter("neon-db-url");
 
     if (!dbUrl) throw new Error(`Database URL not found for stage: ${config.stage}`);
     
