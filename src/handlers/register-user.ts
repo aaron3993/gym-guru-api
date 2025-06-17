@@ -1,6 +1,6 @@
 import { APIGatewayEvent, APIGatewayProxyHandler } from "aws-lambda";
-import { getSSMParameter } from "../utils/parameterStore";
 import { initializeFirebase, verifyToken } from "../utils/firestoreUtils";
+import { getDbPool } from "../database/neonClient";
 
 export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) => {
     const origin: string | undefined = event.headers?.origin;
@@ -50,23 +50,55 @@ export const handler: APIGatewayProxyHandler = async (event: APIGatewayEvent) =>
         }
 
         await verifyToken(token);
+        
+        if (!event.body) {
+            return {
+              statusCode: 400,
+              headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                  "Access-Control-Allow-Methods": "POST, OPTIONS",
+                  "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                  "Access-Control-Allow-Credentials": "true",
+              },
+              body: JSON.stringify({ message: "Request body is missing or empty" }),
+            };
+          }
+      
+        const { userId, email } = JSON.parse(event.body);
 
-        const neonDbUrl = 'neon-db-url'
-        await getSSMParameter(neonDbUrl)
-        if (!neonDbUrl) throw new Error("Rapid API Key not found");
-
-        // connect to db
-
-        // insert to db
+        const pool = await getDbPool();
+        
+        const result = await pool.query(
+            'INSERT INTO users (id, email) VALUES ($1, $2) RETURNING *',
+            [userId, email]
+        );
         
         return {
             statusCode: 200,
-            body: "User successfully registered!",
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true",
+            },
+            body: JSON.stringify({ 
+                message: 'User successfully registered!',
+                user: result.rows[0]
+            }),
         };
     } catch (error) {
         console.error("Error inserting user to database: ", error);
         return {
             statusCode: 500,
+            headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Origin": origin && allowedOrigins.includes(origin) ? origin : allowedOrigins[0],
+                "Access-Control-Allow-Methods": "GET, OPTIONS",
+                "Access-Control-Allow-Headers": "Content-Type, Authorization",
+                "Access-Control-Allow-Credentials": "true",
+            },
             body: JSON.stringify({ message: 'Error registering a new user', error }),
         };
     }
