@@ -6,16 +6,10 @@ let pool: Pool | null = null;
 
 export async function getDbPool(): Promise<Pool> {
   if (!pool) {
-    let dbUrl: string | undefined;
     const stage = process.env.STAGE || 'staging';
     const config = environments[stage];
     
-    if (config.stage === 'production') {
-      dbUrl = await getSSMParameter("/production/neon-db-url");
-    } else {
-      // For both staging and development
-      dbUrl = await getSSMParameter("/staging/neon-db-url");
-    }
+    const dbUrl = await getSSMParameter("/neon-db-url");
 
     if (!dbUrl) throw new Error(`Database URL not found for stage: ${config.stage}`);
     
